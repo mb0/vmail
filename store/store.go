@@ -25,14 +25,23 @@ type Dest struct {
 	Forwrd string
 }
 
+func (d *Dest) String() string {
+	var typ string
+	if d.Type == TypeAlias {
+		typ = " -> " + d.Forwrd
+	}
+	return fmt.Sprintf("%s@%s %s", d.Name, d.Domain, typ)
+}
+
 var CreateSql = `create table dest (
 	id integer primary key autoincrement,
 	type integer,
 	name text,
 	domain text,
-	enable integer,
+	enable integer default 1,
 	passwd text,
-	forwrd text
+	forwrd text,
+	unique (name, domain)
 )`
 
 var DomainsSql = `select
@@ -43,6 +52,10 @@ var DomainsSql = `select
 var DestsSql = `select
 	id, type, name, domain, enable, passwd, forwrd
 	from dest %s order by domain, name
+`
+var InsertSql = `insert into dest
+	(type, name, domain, passwd, forwrd)
+	values (?, ?, ?, ?, ?)
 `
 
 func Create(db *sql.DB) error {
@@ -84,4 +97,14 @@ func Dests(db *sql.DB, where string, args ...interface{}) ([]Dest, error) {
 		res = append(res, dest)
 	}
 	return res, rows.Err()
+}
+
+func NewBox(db *sql.DB, name, domain, passwd string) error {
+	_, err := db.Exec(InsertSql, TypeBox, name, domain, passwd, "")
+	return err
+}
+
+func NewAlias(db *sql.DB, name, domain, forwrd string) error {
+	_, err := db.Exec(InsertSql, TypeAlias, name, domain, "", forwrd)
+	return err
 }
