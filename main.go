@@ -10,10 +10,6 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
-	"strings"
-	"unicode"
-
-	"github.com/mb0/vmail/store"
 )
 
 var username = flag.String("user", "vmail", "vmail username")
@@ -33,14 +29,15 @@ func main() {
 		err = p.conf.Fprint(os.Stdout, flag.Arg(1))
 	case "list":
 		domain := flag.Arg(1)
-		var res []store.Dest
-		res, err = p.list(domain)
-		if err == nil && len(res) == 0 {
+		res, err1 := p.list(domain)
+		if err = err1; err == nil && len(res) == 0 {
 			fmt.Fprintln(os.Stderr, "no results")
 		}
 		for _, dest := range res {
 			fmt.Println(&dest)
 		}
+	case "passwd":
+		err = p.passwd()
 	case "create":
 		mailbox, passwd := flag.Arg(1), flag.Arg(2)
 		err = p.create(mailbox, passwd)
@@ -79,9 +76,10 @@ flag:
 command:
   setup:  initializes vmail setup
   list:   lists known destinations
+  passwd: SHA512-CRYPTs input
   create: creates a mailbox
   alias:  creates an alias
-  remove: remove an alias or mailbox
+  remove: removes an alias or mailbox
   config: prints configuration to stdout
       sql
       postfix_domain
@@ -92,12 +90,8 @@ command:
 `)
 }
 
-type prog struct {
-	conf *Config
-}
-
-func (p *prog) open() *sql.DB {
-	dbfile := p.conf.DB()
+func open(conf *Config) *sql.DB {
+	dbfile := conf.DB()
 	_, err := os.Stat(dbfile)
 	if err != nil {
 		fail(dbfile, "does not exist")
@@ -107,105 +101,4 @@ func (p *prog) open() *sql.DB {
 		fail("could not connect to", dbfile, err)
 	}
 	return db
-}
-
-func (p *prog) setup() {
-	err := p.conf.Current()
-	if err != nil {
-		fail(err, "\nvmail init must be run as user", p.conf.Username)
-	}
-	_, err = os.Stat(p.conf.HomeDir)
-	if err != nil {
-		fail(p.conf.HomeDir, "does not exist")
-	}
-	fmt.Println("init vmail env in", p.conf.HomeDir)
-	dbpath := p.conf.DB()
-	_, err = os.Stat(dbpath)
-	if err != nil {
-		fmt.Println("creating", dbpath)
-		f, err := os.OpenFile(dbpath, os.O_RDWR|os.O_CREATE, 0660)
-		if err != nil {
-			fail("could not create", dbpath, err)
-		}
-		defer f.Close()
-		db := p.open()
-		defer db.Close()
-		err = store.Create(db)
-		if err != nil {
-			fail("could not create tables", err)
-		}
-	}
-	fmt.Println("init successful!")
-}
-
-func (p *prog) list(domain string) (res []store.Dest, err error) {
-	db := p.open()
-	defer db.Close()
-	if domain == "" {
-		return store.Dests(db, "where enable=1")
-	}
-	return store.Dests(db, "where enable=1 and domain=?", domain)
-}
-
-type Email struct {
-	Addr, Name, Domain string
-}
-
-func parseEmail(addr string, allowplus bool) (*Email, error) {
-	addr = strings.TrimSpace(addr)
-	if strings.IndexFunc(addr, unicode.IsSpace) > 0 {
-		return nil, fmt.Errorf("email must not contain spaces")
-	}
-	res := strings.Split(addr, "@")
-	if len(res) != 2 {
-		return nil, fmt.Errorf("email must contain one '@'")
-	}
-	if res[1] == "" {
-		return nil, fmt.Errorf("email domain must not be empty")
-	}
-	if !allowplus && strings.ContainsRune(res[0], '+') {
-		return nil, fmt.Errorf("email name must not contain '+'")
-	}
-	return &Email{Addr: addr, Name: res[0], Domain: res[1]}, nil
-}
-
-func (p *prog) create(mailbox, passwd string) error {
-	email, err := parseEmail(mailbox, false)
-	if err != nil {
-		return err
-	}
-	if email.Name == "" {
-		return fmt.Errorf("mailbox name part must not be empty")
-	}
-	passwd = strings.TrimPrefix(passwd, "{SHA512-CRYPT}")
-	if len(passwd) != 106 {
-		return fmt.Errorf("invalid password length %d. create with 'doveadm pw -s SHA512-CRYPT'", len(passwd))
-	}
-	db := p.open()
-	defer db.Close()
-	return store.NewBox(db, email.Name, email.Domain, passwd)
-}
-
-func (p *prog) alias(addr, forward string) error {
-	email, err := parseEmail(addr, false)
-	if err != nil {
-		return err
-	}
-	_, err = parseEmail(forward, true)
-	if err != nil {
-		return err
-	}
-	db := p.open()
-	defer db.Close()
-	return store.NewAlias(db, email.Name, email.Domain, forward)
-}
-
-func (p *prog) remove(addr string) error {
-	email, err := parseEmail(addr, false)
-	if err != nil {
-		return err
-	}
-	db := p.open()
-	defer db.Close()
-	return store.Delete(db, "where name=?, domain=?", email.Name, email.Domain)
 }
