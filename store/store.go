@@ -57,6 +57,7 @@ var InsertSql = `insert into dest
 	(type, name, domain, passwd, forwrd)
 	values (?, ?, ?, ?, ?)
 `
+var DeleteSql = `delete from dest`
 
 func Create(db *sql.DB) error {
 	_, err := db.Exec(CreateSql)
@@ -106,5 +107,10 @@ func NewBox(db *sql.DB, name, domain, passwd string) error {
 
 func NewAlias(db *sql.DB, name, domain, forwrd string) error {
 	_, err := db.Exec(InsertSql, TypeAlias, name, domain, "", forwrd)
+	return err
+}
+
+func Delete(db *sql.DB, where string, args ...interface{}) error {
+	_, err := db.Exec(fmt.Sprintf(DeleteSql, where), args...)
 	return err
 }

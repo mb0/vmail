@@ -47,6 +47,9 @@ func main() {
 	case "alias":
 		email, forward := flag.Arg(1), flag.Arg(2)
 		err = p.alias(email, forward)
+	case "remove":
+		email := flag.Arg(1)
+		err = p.remove(email)
 	default:
 		failUsage("unknown command: ", flag.Arg(0))
 	}
@@ -78,6 +81,7 @@ command:
   list:   lists known destinations
   create: creates a mailbox
   alias:  creates an alias
+  remove: remove an alias or mailbox
   config: prints configuration to stdout
       sql
       postfix_domain
@@ -156,6 +160,9 @@ func parseEmail(addr string, allowplus bool) (*Email, error) {
 	if len(res) != 2 {
 		return nil, fmt.Errorf("email must contain one '@'")
 	}
+	if res[1] == "" {
+		return nil, fmt.Errorf("email domain must not be empty")
+	}
 	if !allowplus && strings.ContainsRune(res[0], '+') {
 		return nil, fmt.Errorf("email name must not contain '+'")
 	}
@@ -166,6 +173,9 @@ func (p *prog) create(mailbox, passwd string) error {
 	email, err := parseEmail(mailbox, false)
 	if err != nil {
 		return err
+	}
+	if email.Name == "" {
+		return fmt.Errorf("mailbox name part must not be empty")
 	}
 	passwd = strings.TrimPrefix(passwd, "{SHA512-CRYPT}")
 	if len(passwd) != 106 {
@@ -188,4 +198,14 @@ func (p *prog) alias(addr, forward string) error {
 	db := p.open()
 	defer db.Close()
 	return store.NewAlias(db, email.Name, email.Domain, forward)
+}
+
+func (p *prog) remove(addr string) error {
+	email, err := parseEmail(addr, false)
+	if err != nil {
+		return err
+	}
+	db := p.open()
+	defer db.Close()
+	return store.Delete(db, "where name=?, domain=?", email.Name, email.Domain)
 }
