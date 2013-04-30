@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/mb0/vmail/feeds"
 	"github.com/mb0/vmail/store"
 )
 
@@ -37,14 +38,26 @@ func (c *Config) Current() error {
 	return nil
 }
 
-func (c *Config) DB() string {
+func (c *Config) DbFile() string {
 	return filepath.Join(c.HomeDir, "vmail.sqlite")
+}
+
+func (c *Config) FeedsDir() string {
+	return filepath.Join(c.HomeDir, "feeds") + "/"
 }
 
 func (c *Config) Fprint(w io.Writer, conf string) error {
 	if conf == "sql" {
-		_, err := fmt.Fprintf(w, store.CreateSql)
-		return err
+		var sqls []string
+		sqls = append(sqls, store.CreateSql...)
+		sqls = append(sqls, feeds.CreateSql...)
+		for _, s := range sqls {
+			_, err := fmt.Fprintln(w, s)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	tmpl := tmpls.Lookup(conf)
 	if tmpl == nil {
@@ -75,8 +88,8 @@ dbpath = {{ .HomeDir }}/vmail.sqlite
 query = SELECT forwrd FROM dest WHERE name='%u' AND domain='%d' AND enable=1 AND type=2
 
 {{end}}{{define "dovecot_auth"}}
-mail_uid = {{ .Uid }}
-mail_gid = {{ .Gid }}
+mail_uid = {{ .Username }}
+mail_gid = {{ .Username }}
 
 mail_location = maildir:{{ .HomeDir }}/%u
 mail_home = {{ .HomeDir }}/%u/home

@@ -16,7 +16,7 @@ const (
 )
 
 type Dest struct {
-	Id     uint64
+	Id     int64
 	Type   int
 	Name   string
 	Domain string
@@ -33,7 +33,7 @@ func (d *Dest) String() string {
 	return fmt.Sprintf("%s@%s %s", d.Name, d.Domain, typ)
 }
 
-var CreateSql = `create table dest (
+var CreateSql = []string{`create table if not exists dest (
 	id integer primary key autoincrement,
 	type integer,
 	name text,
@@ -42,7 +42,7 @@ var CreateSql = `create table dest (
 	passwd text,
 	forwrd text,
 	unique (name, domain)
-)`
+)`}
 
 var DomainsSql = `select
 	distinct domain
@@ -57,11 +57,16 @@ var InsertSql = `insert into dest
 	(type, name, domain, passwd, forwrd)
 	values (?, ?, ?, ?, ?)
 `
-var DeleteSql = `delete from dest`
+var DeleteSql = `delete from dest %s`
 
 func Create(db *sql.DB) error {
-	_, err := db.Exec(CreateSql)
-	return err
+	for _, s := range CreateSql {
+		_, err := db.Exec(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func Domains(db *sql.DB, where string, args ...interface{}) ([]string, error) {

@@ -22,6 +22,7 @@ func TestStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer db.Close()
 	err = Create(db)
 	if err != nil {
 		t.Fatal(err)

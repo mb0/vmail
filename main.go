@@ -47,6 +47,12 @@ func main() {
 	case "remove":
 		email := flag.Arg(1)
 		err = p.remove(email)
+	case "feed":
+		name, url := flag.Arg(1), flag.Arg(2)
+		err = p.feed(name, url)
+	case "checkfeed":
+		name := flag.Arg(1)
+		err = p.checkFeed(name)
 	default:
 		failUsage("unknown command: ", flag.Arg(0))
 	}
@@ -91,7 +97,7 @@ command:
 }
 
 func open(conf *Config) *sql.DB {
-	dbfile := conf.DB()
+	dbfile := conf.DbFile()
 	_, err := os.Stat(dbfile)
 	if err != nil {
 		fail(dbfile, "does not exist")
