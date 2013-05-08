@@ -1,7 +1,7 @@
 vmail
 =====
 
-vmail is a virtual mail server helper.
+vmail is a virtual mail server helper and rss to maildir feeder.
 
 Prepare
 -------
@@ -32,8 +32,8 @@ Configure postfix:
 	# postconf -e 'virtual_mailbox_domains = sqlite:/etc/postfix/vmail_mailbox_domains.cf'
 	# postconf -e 'virtual_mailbox_maps = sqlite:/etc/postfix/vmail_mailbox_maps.cf'
 	# postconf -e 'virtual_alias_maps = sqlite:/etc/postfix/vmail_alias_maps.cf'
-	# postconf -e 'virtual_uid_maps = static:vmail'
-	# postconf -e 'virtual_gid_maps = static:vmail'
+	postconf -e 'virtual_uid_maps = static:the vmail uid'
+	postconf -e 'virtual_gid_maps = static:the vmail gid'
 	# postconf -e 'virtual_mailbox_base = /home/vmail'
 
 Setup dovecot config files:
@@ -42,6 +42,7 @@ Setup dovecot config files:
 Configure dovecot:
 	# sed --in-place 's/^!include/#!include/' /etc/dovecot/conf.d/10-auth.conf
 	# echo '!include auth-vmail.conf.ext' >> /etc/dovecot/conf.d/10-auth.conf
+	# sed --in-place 's/^mail_location/#mail_location/' /etc/dovecot/conf.d/10-mail.conf
 
 Configure sasl:
 	# vim /etc/dovecot/conf.d/10-master.conf
@@ -74,9 +75,33 @@ Configure tls:
 	# postconf -e 'smtpd_tls_CAfile = /etc/ssl/certs/vmail.crt.pem'
 	# postconf -e 'smtpd_tls_loglevel = 1'
 	# postconf -e 'smtpd_tls_received_header = yes'
-	edit /etc/dovecot/conf.d/10-ssl.conf
-	ssl_cert = </etc/ssl/certs/vmail.crt.pem
-	ssl_key = </etc/ssl/private/vmail.key.pem
+	# vim /etc/dovecot/conf.d/10-ssl.conf
+	ssl_cert = </etc/ssl/certs/vmail.crt
+	ssl_key = </etc/ssl/private/vmail.key
+
+Configure feeds:
+	# vim /etc/dovecot/conf.d/10-mail.conf
+	namespace inbox {
+	  type = private
+	  separator = /
+	  inbox = yes
+	}
+	namespace {
+	  type = public
+	  separator = /
+	  prefix = Feeds/
+	  location = maildir:/home/vmail/feeds:INDEX=/home/vmail/%u/feeds
+	  subscriptions = no
+	}
+	mail_plugins = acl
+	# vim /etc/dovecot/conf.d/20-imap.conf
+	protocol imap {
+	  mail_plugins = $mail_plugins imap_acl
+	}
+	# vim /etc/dovecot/conf.d/90-acl.conf
+	plugin {
+	  acl = vfile
+	}
 
 remember to open your firewall and restart the services.
 you might also change vim /etc/dovecot/conf.d/15-lda.conf lda_mailbox_autocreate and lda_mailbox_autosubscribe
@@ -88,6 +113,8 @@ Usage
 	# vmail alias client@host user@extern
 	# vmail list host
 	# vmail remove user@host
+	# vmail feed xkcd http://xkcd.com/rss.xml
+	# vmail checkfeed '*'
 
 vmail is BSD licensed, Copyright (c) 2013 Martin Schnabel
 

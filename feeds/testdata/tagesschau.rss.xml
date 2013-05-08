@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/resources/xsl/rss2.jsp" type="text/xsl"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+<title>tagesschau.de - Die Nachrichten der ARD</title>
+<link>http://www.tagesschau.de</link>
+<description>tagesschau.de</description>
+<language>de</language>
+<copyright>ARD-aktuell / tagesschau.de</copyright>
+<lastBuildDate>Tue, 07 May 2013 11:14:33 +0200</lastBuildDate>
+<docs>http://blogs.law.harvard.edu/tech/rss</docs>
+<ttl>10</ttl>
+<item>
+<title>Drei Deutsche bei Vulkanausbruch auf Philippinen getötet</title>
+<link>http://www.tagesschau.de/ausland/bergsteiger-philippinen100.html</link>
+<pubDate>Tue, 07 May 2013 09:16:38 +0200</pubDate>
+<content:encoded>
+<![CDATA[
+<p>
+<a href="http://www.tagesschau.de/ausland/bergsteiger-philippinen100.html"><img src="http://miss.tagesschau.de/ausland/mayon134~_v-mittel16x9.jpg" alt="Ausbruch dees Mayons auf den Philippinen (Foto: AP)"/></a>
+<br/><br/>
+Bei einem plötzlichen Vulkanausbruch auf den Philippinen sind vier Bergsteiger ums Leben gekommen. Sie wurden von Gesteinsbrocken erschlagen. Drei der Toten sind Deutsche. Wieviele Menschen insgesamt auf dem Mayon unterwegs waren, ist noch unklar. [<a href="http://www.tagesschau.de/ausland/bergsteiger-philippinen100.html">mehr</a>]
+</p>
+<p>
+<ul>
+<li>
+<a href="http://www.tagesschau.de/multimedia/audio/audio105626.html">Audio: Deutsche Touristen unter den Opfern</a>
+</li>
+</ul>
+</p>
+<p><a href="http://mobil.tagesschau.de/;id=bergsteiger-philippinen100;tpl=artikel.xml/bergsteiger-philippinen100~nimex.xml">Meldung bei mobil.tagesschau.de lesen</a></p>
+]]>
+</content:encoded>
+<description>Bei einem plötzlichen Vulkanausbruch auf den Philippinen sind vier Bergsteiger ums Leben gekommen. Sie wurden von Gesteinsbrocken erschlagen. Drei der Toten sind Deutsche. Wieviele Menschen insgesamt auf dem Mayon unterwegs waren, ist noch unklar.</description>
+<guid>http://www.tagesschau.de/ausland/bergsteiger-philippinen100.html</guid>
+</item>
+</channel>
+</rss>

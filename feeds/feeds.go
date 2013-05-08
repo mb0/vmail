@@ -1,24 +1,17 @@
 package feeds
 
 import (
+	"bytes"
 	"code.google.com/p/go-charset/charset"
 	"code.google.com/p/go-html-transform/h5"
 	"code.google.com/p/go-html-transform/html/transform"
 	"code.google.com/p/go.net/html"
 	"encoding/xml"
 	"fmt"
-	"github.com/ungerik/go-rss"
 	"io"
 	"net/http"
+	"strings"
 )
-
-type Feed struct {
-	Channel rss.Channel `xml:"channel"`
-}
-
-func (f *Feed) Entry(at int) *Entry {
-	return &Entry{f.Channel.Item[at]}
-}
 
 func Read(r io.Reader) (*Feed, error) {
 	dec := xml.NewDecoder(r)
@@ -40,39 +33,56 @@ func ReadHttp(url string) (*Feed, error) {
 }
 
 type Entry struct {
-	rss.Item
+	Item
 }
 
-func (e *Entry) Html() string {
-	parts, err := h5.PartialFromString(e.Description)
+func renderHtml(r io.Reader, w io.Writer) error {
+	parts, err := h5.Partial(r)
 	if err != nil {
-		fmt.Println(err)
-		return ""
+		return err
 	}
-	tree := h5.NewTree(&html.Node{
-		Type:       html.DocumentNode,
-		FirstChild: parts[0],
-	})
+	node := &html.Node{Type: html.DocumentNode}
+	for _, p := range parts {
+		node.AppendChild(p)
+	}
+	tree := h5.NewTree(node)
 	t := transform.New(&tree)
 	t.Apply(transform.TransformFunc(imgAlt), "img")
-	desc := h5.RenderNodesToString([]*html.Node{t.Doc()})
-	return fmt.Sprintf(`<h1><a href="%s">%s</a></h1>
-%s
-<p>Url: <a href="%s">%s</a></p>`, e.Link, e.Title, desc, e.Link, e.Link)
+	return h5.RenderNodes(w, []*html.Node{t.Doc()})
+}
+
+func (e *Entry) Html() (io.Reader, error) {
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "<h1><a href=\"%s\">%s</a></h1>\n", e.Link, e.Title)
+	if e.Content != "" {
+		renderHtml(strings.NewReader(e.Content), &buf)
+	} else if e.Encoded != "" {
+		renderHtml(strings.NewReader(e.Encoded), &buf)
+	} else {
+		renderHtml(strings.NewReader(e.Description), &buf)
+	}
+	fmt.Fprintf(&buf, "\n<p>Url: <a href=\"%s\">%s</a></p>", e.Link, e.Link)
+	if url := e.Enclosure.URL; url != "" {
+		fmt.Fprintf(&buf, "\n<p>Enclosure: <a href=\"%s\">%s</a></p>", url, url)
+	}
+	return &buf, nil
 }
 
 func imgAlt(n *html.Node) {
 	var alt string
 	for _, a := range n.Attr {
 		if a.Key == "alt" {
-			alt = a.Val
+			alt = html.UnescapeString(a.Val)
 			break
 		}
 	}
 	if alt == "" {
 		return
 	}
-	p := h5.Element("p", nil, h5.Text(alt))
+	p := h5.Element("p", nil, &html.Node{
+		Data: alt,
+		Type: html.TextNode,
+	})
 	if n.NextSibling != nil {
 		n.Parent.InsertBefore(p, n.NextSibling)
 	} else {

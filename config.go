@@ -77,11 +77,11 @@ User: {{ .Username }}
 Home: {{ .HomeDir }}
 {{define "postfix_domain"}}
 dbpath = {{ .HomeDir }}/vmail.sqlite
-query = SELECT domain FROM dest WHERE name='%u' AND domain='%d' AND enable=1 AND type=1
+query = SELECT domain FROM dest WHERE domain='%s' AND enable=1 AND type=1
 
 {{end}}{{define "postfix_mailbox"}}
 dbpath = {{ .HomeDir }}/vmail.sqlite
-query = SELECT domain FROM dest WHERE name='%u' AND domain='%d' AND enable=1 AND type=1
+query = SELECT name||"@"||domain||"/" as maildir FROM dest WHERE name='%u' AND domain='%d' AND enable=1 AND type=1
 
 {{end}}{{define "postfix_alias"}}
 dbpath = {{ .HomeDir }}/vmail.sqlite

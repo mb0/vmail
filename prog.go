@@ -7,7 +7,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +27,25 @@ type prog struct {
 	conf *Config
 }
 
+func ensureFile(name string, mode os.FileMode, content io.Reader) (created bool, err error) {
+	_, err = os.Stat(name)
+	if err == nil || !os.IsNotExist(err) {
+		return
+	}
+	var f *os.File
+	f, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE, mode)
+	if err != nil {
+		return
+	}
+	created = true
+	defer f.Close()
+	if content == nil {
+		return
+	}
+	_, err = io.Copy(f, content)
+	return
+}
+
 func (p *prog) setup() {
 	err := p.conf.Current()
 	if err != nil {
@@ -35,14 +57,11 @@ func (p *prog) setup() {
 	}
 	fmt.Println("init vmail env in", p.conf.HomeDir)
 	dbpath := p.conf.DbFile()
-	_, err = os.Stat(dbpath)
+	createdb, err := ensureFile(dbpath, 0644, nil)
 	if err != nil {
-		fmt.Println("creating", dbpath)
-		f, err := os.OpenFile(dbpath, os.O_RDWR|os.O_CREATE, 0660)
-		if err != nil {
-			fail("could not create", dbpath, err)
-		}
-		defer f.Close()
+		fail("could not create", dbpath, err)
+	}
+	if createdb {
 		db := open(p.conf)
 		defer db.Close()
 		err = store.Create(db)
@@ -56,12 +75,23 @@ func (p *prog) setup() {
 	}
 	feedsdir := p.conf.FeedsDir()
 	_, err = os.Stat(feedsdir)
+	if err != nil && !os.IsNotExist(err) {
+		fail("could not stat", feedsdir, err)
+	}
 	if err != nil {
 		fmt.Println("creating", feedsdir)
 		err = os.Mkdir(feedsdir, 0770)
 		if err != nil {
 			fail("could not create", feedsdir, err)
 		}
+	}
+	_, err = ensureFile(filepath.Join(feedsdir, "dovecot-shared"), 0660, nil)
+	if err != nil {
+		fail("could not ensure dovecot-shared", err)
+	}
+	_, err = ensureFile(filepath.Join(feedsdir, "dovecot-acl"), 0660, strings.NewReader("authenticated lrst\n"))
+	if err != nil {
+		fail("could not ensure dovecot-acl", err)
 	}
 	fmt.Println("init successful!")
 }
@@ -190,10 +220,9 @@ func (p *prog) checkFeed(name string) error {
 	if len(feeders) < 1 {
 		return fmt.Errorf("no feeder named '%s'", name)
 	}
-	mdir := &maildir.Maildir{p.conf.FeedsDir()}
 	for _, f := range feeders {
 		fmt.Printf("check feeder %s\n", f.Name)
-		err = p.checkEntries(mdir, f)
+		err = p.checkEntries(f)
 		if err != nil {
 			return err
 		}
@@ -204,13 +233,45 @@ func (p *prog) getFeeders(name string) (fs []feeds.Feeder, err error) {
 	db := open(p.conf)
 	defer db.Close()
 	if name == "*" {
-		return feeds.Feeders(db, "where name=?", name)
+		return feeds.Feeders(db, "")
 	}
-	return feeds.Feeders(db, "")
+	return feeds.Feeders(db, "where name=?", name)
 }
 
-func (p *prog) checkEntries(mdir *maildir.Maildir, f feeds.Feeder) error {
-	// check entries
+func ensureMaildir(conf *Config, name string) (*maildir.Maildir, error) {
+	root := &maildir.Maildir{conf.FeedsDir()}
+	child, err := root.Child(name, false)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		child, err = root.Child(name, true)
+		if err != nil {
+			return nil, err
+		}
+		uid, _ := strconv.Atoi(conf.Uid)
+		gid, _ := strconv.Atoi(conf.Gid)
+		err = os.Chown(child.Path, uid, gid)
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = ensureFile(filepath.Join(child.Path, "dovecot-acl"), 0664, strings.NewReader("authenticated lrst\n"))
+	if err != nil {
+		return nil, err
+	}
+	return child, nil
+}
+
+func (p *prog) checkEntries(f feeds.Feeder) error {
+	addr, err := email.ParseAddr(fmt.Sprintf(`"%s" <%s@feeds>`, f.Name, f.Name))
+	if err != nil {
+		return err
+	}
+	maildir, err := ensureMaildir(p.conf, f.Name)
+	if err != nil {
+		return err
+	}
 	entries, err := f.Entries()
 	if err != nil {
 		return err
@@ -221,39 +282,42 @@ func (p *prog) checkEntries(mdir *maildir.Maildir, f feeds.Feeder) error {
 	if err != nil {
 		return err
 	}
+	filtered := make([]feeds.Entry, 0, len(entries))
+	for _, e := range entries {
+		if strings.Contains(e.Link, "sportschau.de") {
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	entries = filtered
 	if len(entries) == 0 {
 		fmt.Println("\tno new entries")
 		return nil
 	}
-	sub, err := mdir.Child(f.Name, false)
-	if os.IsNotExist(err) {
-		sub, err = mdir.Child(f.Name, true)
-		if err == nil {
-			uid, _ := strconv.Atoi(p.conf.Uid)
-			gid, _ := strconv.Atoi(p.conf.Gid)
-			os.Chown(sub.Path, uid, gid)
-		}
-	}
-	if err != nil {
-		return err
-	}
-	addr, err := email.ParseAddr(fmt.Sprintf("feeds+%s@mb0.org", f.Name))
-	if err != nil {
-		return err
-	}
 	var written []feeds.Entry
 	for _, e := range entries {
-		m := email.NewMsg(addr, e.Title, addr)
-		err = m.AddHtml(strings.NewReader(e.Html()))
+		r, err := e.Html()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
+			continue
+		}
+		m := email.NewMsg(addr, e.Title, addr)
+		dtime, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", e.PubDate)
+		if err != nil {
+			log.Println(err)
+		} else {
+			m.Header.Set("Date", dtime.Format(time.RFC822))
+		}
+		err = m.AddHtml(r)
+		if err != nil {
+			log.Println(err)
 			continue
 		}
 		var buf bytes.Buffer
 		m.WriteTo(&buf)
-		_, err := sub.CreateMail(&buf)
+		_, err = maildir.CreateMail(&buf)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
 		written = append(written, e)
