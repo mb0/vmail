@@ -12,10 +12,12 @@ Install
 -------
 
 Install and initialize vmail
+
 	$ go get github.com/mb0/vmail
 	$ sudo ln -s $GOPATH/bin/vmail /usr/bin
 
 Setup the vmail user:
+
 	$ sudo bash
 	# useradd vmail
 	# mkdir /home/vmail
@@ -24,10 +26,13 @@ Setup the vmail user:
 	# sudo -u vmail vmail setup
 
 Setup postfix config files:
+
 	# vmail config postfix_domain  > /etc/postfix/vmail_mailbox_domains.cf
 	# vmail config postfix_mailbox > /etc/postfix/vmail_mailbox_maps.cf
 	# vmail config postfix_alias   > /etc/postfix/vmail_alias_maps.cf
+
 Configure postfix:
+
 	# postconf -e 'home_mailbox = Maildir/'
 	# postconf -e 'virtual_mailbox_domains = sqlite:/etc/postfix/vmail_mailbox_domains.cf'
 	# postconf -e 'virtual_mailbox_maps = sqlite:/etc/postfix/vmail_mailbox_maps.cf'
@@ -37,14 +42,18 @@ Configure postfix:
 	# postconf -e 'virtual_mailbox_base = /home/vmail'
 
 Setup dovecot config files:
+
 	# vmail config dovecot_auth > /etc/dovecot/conf.d/auth-vmail.conf.ext
 	# vmail config dovecot_sql  > /etc/dovecot/vmail-sql.conf.ext
+
 Configure dovecot:
+
 	# sed --in-place 's/^!include/#!include/' /etc/dovecot/conf.d/10-auth.conf
 	# echo '!include auth-vmail.conf.ext' >> /etc/dovecot/conf.d/10-auth.conf
 	# sed --in-place 's/^mail_location/#mail_location/' /etc/dovecot/conf.d/10-mail.conf
 
 Configure sasl:
+
 	# vim /etc/dovecot/conf.d/10-master.conf
 	uncomment the 'Postfix smtp-auth' block and set mode to 0660 and user, group to postfix
 	# postconf -e 'smtpd_sasl_type = dovecot'
@@ -56,6 +65,7 @@ Configure sasl:
 	# postconf -e 'smtpd_recipient_restrictions = permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination'
 
 Create certificate:
+
 	# touch vmail.key
 	# chmod 600 vmail.key
 	# openssl genrsa 1024 > vmail.key
@@ -67,6 +77,7 @@ Create certificate:
 	# mv vmail.crt.pem /etc/ssl/certs/
 
 Configure tls:
+
 	# postconf -e 'smtp_tls_security_level = may'
 	# postconf -e 'smtpd_tls_security_level = may'
 	# postconf -e 'smtp_tls_note_starttls_offer = yes'
@@ -80,6 +91,7 @@ Configure tls:
 	ssl_key = </etc/ssl/private/vmail.key
 
 Configure feeds:
+
 	# vim /etc/dovecot/conf.d/10-mail.conf
 	namespace inbox {
 	  type = private
@@ -117,4 +129,3 @@ Usage
 	# vmail checkfeed '*'
 
 vmail is BSD licensed, Copyright (c) 2013 Martin Schnabel
-
