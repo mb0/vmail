@@ -165,7 +165,7 @@ func (f *Feeder) Fed(db *sql.DB, entries []Entry, now time.Time) error {
 
 func (f *Feeder) Prune(db *sql.DB, limit int) error {
 	_, err := db.Exec(`delete from fedentry where feeder=? and id not in (
-		select id from fedentry where feeder=? order by time, id desc limit ?
+		select id from fedentry where feeder=? order by time desc, id desc limit ?
 	)`, f.Id, f.Id, limit)
 	return err
 }
