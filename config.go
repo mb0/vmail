@@ -77,7 +77,7 @@ User: {{ .Username }}
 Home: {{ .HomeDir }}
 {{define "postfix_domain"}}
 dbpath = {{ .HomeDir }}/vmail.sqlite
-query = SELECT domain FROM dest WHERE domain='%s' AND enable=1 AND type=1
+query = SELECT domain FROM dest WHERE domain='%s' AND enable=1
 
 {{end}}{{define "postfix_mailbox"}}
 dbpath = {{ .HomeDir }}/vmail.sqlite
