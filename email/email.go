@@ -13,7 +13,7 @@ import (
 	"net/textproto"
 	"strings"
 
-	qprintable "mime/quotedprintable"
+	"mime/quotedprintable"
 )
 
 var NoAddr = Addr{}
@@ -207,7 +207,7 @@ func (m *Msg) writeMultipart(w io.Writer) error {
 }
 func (m *Msg) AddQuotedPrintable(typ string, r io.Reader) error {
 	buf := &bytes.Buffer{}
-	enc := qprintable.NewWriter(buf)
+	enc := quotedprintable.NewWriter(buf)
 	_, err := io.Copy(enc, r)
 	if err != nil {
 		return err
