@@ -2,25 +2,35 @@ package feeds
 
 import (
 	"bytes"
-	"code.google.com/p/go-charset/charset"
-	"code.google.com/p/go-html-transform/h5"
-	"code.google.com/p/go-html-transform/html/transform"
-	"code.google.com/p/go.net/html"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/hobeone/go-html-transform/h5"
+	"github.com/hobeone/go-html-transform/html/transform"
+	"golang.org/x/net/html"
+	"golang.org/x/text/encoding/htmlindex"
+	txttransform "golang.org/x/text/transform"
 )
 
 func Read(r io.Reader) (*Feed, error) {
 	dec := xml.NewDecoder(r)
-	dec.CharsetReader = charset.NewReader
+	dec.CharsetReader = newReaderLabel
 	var f Feed
 	if err := dec.Decode(&f); err != nil {
 		return nil, err
 	}
 	return &f, nil
+}
+
+func newReaderLabel(label string, in io.Reader) (io.Reader, error) {
+	enc, _ := htmlindex.Get(label)
+	if enc != nil {
+		return nil, fmt.Errorf("unsupported charset: %q", label)
+	}
+	return txttransform.NewReader(in, enc.NewDecoder()), nil
 }
 
 func ReadHttp(url string) (*Feed, error) {

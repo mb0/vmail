@@ -10,11 +10,10 @@ import (
 	"io"
 	"mime/multipart"
 	"net/mail"
-	"net/smtp"
 	"net/textproto"
 	"strings"
 
-	"github.com/sloonz/go-qprintable"
+	qprintable "mime/quotedprintable"
 )
 
 var NoAddr = Addr{}
@@ -206,10 +205,9 @@ func (m *Msg) writeMultipart(w io.Writer) error {
 	}
 	return nil
 }
-
 func (m *Msg) AddQuotedPrintable(typ string, r io.Reader) error {
 	buf := &bytes.Buffer{}
-	enc := qprintable.NewEncoder(qprintable.UnixTextEncoding, buf)
+	enc := qprintable.NewWriter(buf)
 	_, err := io.Copy(enc, r)
 	if err != nil {
 		return err
@@ -225,35 +223,4 @@ func (m *Msg) AddPlain(r io.Reader) error {
 
 func (m *Msg) AddHtml(r io.Reader) error {
 	return m.AddQuotedPrintable(`text/html; charset="utf-8"`, r)
-}
-
-func (m *Msg) Send(host string) error {
-	var from, to string
-	if from = m.Header.Get("From"); from == "" {
-		return fmt.Errorf("no sender address")
-	}
-	if to = m.Header.Get("To"); to == "" {
-		return fmt.Errorf("no recipient address")
-	}
-	c, err := smtp.Dial(host)
-	if err != nil {
-		return err
-	}
-	defer c.Quit()
-	if err = c.Mail(from); err != nil {
-		return err
-	}
-	if err = c.Rcpt(to); err != nil {
-		return err
-	}
-	w, err := c.Data()
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-	err = m.WriteTo(w)
-	if err != nil {
-		return err
-	}
-	return nil
 }

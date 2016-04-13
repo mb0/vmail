@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
-	"antihe.ro/pwhash/sha512_crypt"
-	"code.google.com/p/gopass"
 	"github.com/mb0/vmail/email"
 	"github.com/mb0/vmail/feeds"
 	"github.com/mb0/vmail/store"
-	"github.com/sloonz/go-maildir"
+	"github.com/mewbak/gopass"
+	"github.com/ncw/pwhash/sha512_crypt"
+	maildir "github.com/sloonz/go-maildir"
 )
 
 type prog struct {
