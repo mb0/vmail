@@ -8,6 +8,7 @@ package feeds
 
 type Feed struct {
 	Channel Channel `xml:"channel"`
+	Item    []Item  `xml:"item"`
 }
 
 func (f *Feed) Entry(at int) *Entry {

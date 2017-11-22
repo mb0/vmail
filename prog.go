@@ -304,10 +304,9 @@ func (p *prog) checkEntries(f feeds.Feeder) error {
 		m := email.NewMsg(addr, e.Title, addr)
 		dtime, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", e.PubDate)
 		if err != nil {
-			log.Println(err)
-		} else {
-			m.Header.Set("Date", dtime.Format(time.RFC822))
+			dtime = time.Now()
 		}
+		m.Header.Set("Date", dtime.Format(time.RFC822))
 		err = m.AddHtml(r)
 		if err != nil {
 			log.Println(err)

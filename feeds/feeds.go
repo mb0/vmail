@@ -22,6 +22,9 @@ func Read(r io.Reader) (*Feed, error) {
 	if err := dec.Decode(&f); err != nil {
 		return nil, err
 	}
+	if len(f.Item) > 0 && len(f.Channel.Item) == 0 {
+		f.Channel.Item = f.Item
+	}
 	return &f, nil
 }
 
