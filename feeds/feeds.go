@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/hobeone/go-html-transform/h5"
-	"github.com/hobeone/go-html-transform/html/transform"
+	"github.com/rtfb/go-html-transform/h5"
+	"github.com/rtfb/go-html-transform/html/transform"
 	"golang.org/x/net/html"
 	"golang.org/x/text/encoding/htmlindex"
 	txttransform "golang.org/x/text/transform"
@@ -75,9 +75,10 @@ func (e *Entry) Html() (io.Reader, error) {
 		renderHtml(strings.NewReader(e.Description), &buf)
 	}
 	fmt.Fprintf(&buf, "\n<p>Url: <a href=\"%s\">%s</a></p>", e.Link, e.Link)
-	if url := e.Enclosure.URL; url != "" {
+	if url := e.Enclosure.URL; url != "" && url != e.Link {
 		fmt.Fprintf(&buf, "\n<p>Enclosure: <a href=\"%s\">%s</a></p>", url, url)
 	}
+	fmt.Fprintln(&buf)
 	return &buf, nil
 }
 

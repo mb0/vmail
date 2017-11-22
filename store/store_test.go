@@ -6,8 +6,9 @@ package store
 
 import (
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
 	"testing"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var FixtureSql = `insert into dest
@@ -51,7 +52,7 @@ func TestStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	alias1 := Dest{2, TypeAlias, "mb0", "mb0.org", true, "", "mbnull@mbnull.org"}
-	if len(aliases) != 1 || boxes[0] != alias1 {
+	if len(aliases) != 1 || aliases[0] != alias1 {
 		t.Logf("expect alias %v got %v\n", alias1, aliases)
 	}
 }

@@ -1,6 +1,6 @@
 [submodule "vendor/github.com/hobeone/go-html-transform"]
 	path = vendor/github.com/hobeone/go-html-transform
-	url = https://github.com/hobeone/go-html-transform
+	url = https://github.com/imdario/go-html-transform
 [submodule "vendor/github.com/sloonz/go-maildir"]
 	path = vendor/github.com/sloonz/go-maildir
 	url = https://github.com/sloonz/go-maildir
@@ -10,3 +10,9 @@
 [submodule "vendor/github.com/ncw/pwhash"]
 	path = vendor/github.com/ncw/pwhash
 	url = https://github.com/ncw/pwhash
+[submodule "vendor/github.com/imdario/go-html-transform"]
+	path = vendor/github.com/imdario/go-html-transform
+	url = https://github.com/imdario/go-html-transform
+[submodule "vendor/github.com/rtfb/go-html-transform"]
+	path = vendor/github.com/rtfb/go-html-transform
+	url = https://github.com/rtfb/go-html-transform

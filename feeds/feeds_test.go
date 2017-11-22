@@ -13,7 +13,8 @@ import (
 func checkFeed(feed *Feed) error {
 	expect := `<h1><a href="http://xkcd.com/1187/">Aspect Ratio</a></h1>
 <img src="http://imgs.xkcd.com/comics/aspect_ratio.png" title="I&#39;m always disappointed when &#39;Anamorphic Widescreen&#39; doesn&#39;t refer to a widescreen Animorphs movie." alt="I&#39;m always disappointed when &#39;Anamorphic Widescreen&#39; doesn&#39;t refer to a widescreen Animorphs movie."/><p>I&#39;m always disappointed when &#39;Anamorphic Widescreen&#39; doesn&#39;t refer to a widescreen Animorphs movie.</p>
-<p>Url: <a href="http://xkcd.com/1187/">http://xkcd.com/1187/</a></p>`
+<p>Url: <a href="http://xkcd.com/1187/">http://xkcd.com/1187/</a></p>
+`
 	r, err := feed.Entry(0).Html()
 	if err != nil {
 		return err
@@ -86,7 +87,8 @@ func TestHtml(t *testing.T) {
 	e := Entry{Item{Title: "Title", Link: "Link", Description: "ignore", Content: "Content"}}
 	expect := `<h1><a href="Link">Title</a></h1>
 Content
-<p>Url: <a href="Link">Link</a></p>`
+<p>Url: <a href="Link">Link</a></p>
+`
 	r, err := e.Html()
 	if err != nil {
 		t.Fatal(err)
