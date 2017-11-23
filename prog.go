@@ -239,7 +239,7 @@ func (p *prog) getFeeders(name string) (fs []feeds.Feeder, err error) {
 }
 
 func ensureMaildir(conf *Config, name string) (*maildir.Maildir, error) {
-	root := &maildir.Maildir{conf.FeedsDir()}
+	root := &maildir.Maildir{Path: conf.FeedsDir()}
 	child, err := root.Child(name, false)
 	if err != nil {
 		if !os.IsNotExist(err) {

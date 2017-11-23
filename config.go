@@ -88,15 +88,15 @@ dbpath = {{ .HomeDir }}/vmail.sqlite
 query = SELECT forwrd FROM dest WHERE name='%u' AND domain='%d' AND enable=1 AND type=2
 
 {{end}}{{define "dovecot_auth"}}
-mail_uid = {{ .Username }}
-mail_gid = {{ .Username }}
+mail_uid = {{ .Uid }}
+mail_gid = {{ .Uid }}
 
 mail_location = maildir:{{ .HomeDir }}/%u
 mail_home = {{ .HomeDir }}/%u/home
 
 userdb {
   driver = static
-  args =
+  args = uid={{ .Uid }} gid={{ .Uid }} home=/home/vmail/%u
 }
 
 passdb {
