@@ -239,22 +239,15 @@ func (p *prog) getFeeders(name string) (fs []feeds.Feeder, err error) {
 }
 
 func ensureMaildir(conf *Config, name string) (*maildir.Maildir, error) {
-	root := &maildir.Maildir{Path: conf.FeedsDir()}
-	child, err := root.Child(name, false)
+	uid, _ := strconv.Atoi(conf.Uid)
+	gid, _ := strconv.Atoi(conf.Gid)
+	root, err := maildir.NewWithPerm(conf.FeedsDir(), true, maildir.DefaultFilePerm, uid, gid)
 	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-		child, err = root.Child(name, true)
-		if err != nil {
-			return nil, err
-		}
-		uid, _ := strconv.Atoi(conf.Uid)
-		gid, _ := strconv.Atoi(conf.Gid)
-		err = os.Chown(child.Path, uid, gid)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
+	child, err := root.Child(name, true)
+	if err != nil {
+		return nil, err
 	}
 	_, err = ensureFile(filepath.Join(child.Path, "dovecot-acl"), 0664, strings.NewReader("authenticated lrst\n"))
 	if err != nil {

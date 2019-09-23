@@ -5,7 +5,7 @@ vmail is a virtual mail server helper and rss to maildir feeder.
 
 Prepare
 -------
-	# Requires Ubuntu 12.04 or 12.10
+	# Requires a recent Debian based system
 	$ sudo apt-get install postfix dovecot-core dovecot-imapd dovecot-sqlite sqlite3
 
 Install
