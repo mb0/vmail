@@ -16,11 +16,16 @@ import (
 )
 
 func Read(r io.Reader) (*Feed, error) {
-	dec := xml.NewDecoder(r)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r)
+	if err != nil {
+		return nil, fmt.Errorf("reading feed: %v", err)
+	}
+	dec := xml.NewDecoder(&buf)
 	dec.CharsetReader = newReaderLabel
 	var f Feed
 	if err := dec.Decode(&f); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%v\n%s", err, buf.String())
 	}
 	if len(f.Item) > 0 && len(f.Channel.Item) == 0 {
 		f.Channel.Item = f.Item
