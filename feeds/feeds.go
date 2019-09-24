@@ -41,12 +41,17 @@ func newReaderLabel(label string, in io.Reader) (io.Reader, error) {
 	return txttransform.NewReader(in, enc.NewDecoder()), nil
 }
 
+var ErrGetHTTP = fmt.Errorf("http get error")
+
 func ReadHttp(url string) (*Feed, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return nil, ErrGetHTTP
+	}
 	return Read(resp.Body)
 }
 

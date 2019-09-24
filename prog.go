@@ -202,7 +202,7 @@ func (p *prog) feed(name, url string) error {
 		// update feed
 		f := feeders[0]
 		if f.Url == url {
-			fmt.Println("feed %s has already url %s", name, url)
+			fmt.Printf("feed %s has already url %s", name, url)
 			return nil
 		}
 		return feeds.UpdateFeeder(db, name, url)
@@ -223,7 +223,7 @@ func (p *prog) checkFeed(name string) error {
 	for _, f := range feeders {
 		fmt.Printf("check feeder %s\n", f.Name)
 		err = p.checkEntries(f)
-		if err != nil {
+		if err != nil && err != feeds.ErrGetHTTP {
 			return err
 		}
 	}
